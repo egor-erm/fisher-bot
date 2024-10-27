@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -10,14 +14,72 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/auth"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"golang.org/x/oauth2"
 )
 
+type jsonToken struct {
+	Access  string `json:"access_token"`
+	Type    string `json:"token_type"`
+	Refresh string `json:"refresh_token"`
+}
+
+var token oauth2.TokenSource
+
+func CacheTokenNotExists() bool {
+	_, s := os.Stat("./token.json")
+	return os.IsNotExist(s)
+}
+
+func InitializeToken() error {
+	if CacheTokenNotExists() {
+		fmt.Println("XBL: New Token")
+		var err error
+		Token, err := auth.RequestLiveTokenWriter(log.Writer())
+		if err != nil {
+			panic(err)
+		}
+		_ = WriteToken(Token)
+		token = oauth2.StaticTokenSource(Token)
+	} else {
+		con, _ := ioutil.ReadFile("./token.json")
+		data := &jsonToken{}
+		err := json.Unmarshal(con, data)
+		Token := &oauth2.Token{}
+
+		Token.AccessToken = data.Access
+		Token.RefreshToken = data.Refresh
+		Token.TokenType = data.Type
+		Token.Expiry = time.Now().AddDate(100, 0, 0)
+
+		token = oauth2.StaticTokenSource(Token)
+		log.Println("Cached XBL Token")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func WriteToken(token *oauth2.Token) error {
+	bytes, err := json.MarshalIndent(*token, "", "	")
+	if err != nil {
+		return err
+	}
+	_ = ioutil.WriteFile("./token.json", bytes, 0777)
+	return nil
+}
+
 func main() {
-	dialer := minecraft.Dialer{
-		TokenSource: auth.TokenSource,
+	err := InitializeToken()
+	if err != nil {
+		panic(err)
 	}
 
-	address := "0.0.0.0:20001"
+	dialer := minecraft.Dialer{
+		TokenSource: token,
+	}
+
+	address := "n3.joinserver.xyz:19184"
 
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
@@ -35,7 +97,7 @@ func main() {
 		randoms := rand.New(rand.NewSource(time.Now().Unix()))
 
 		for {
-			random := 3 + randoms.Intn(5-3+1)
+			random := 3 + randoms.Intn(3)
 			time.Sleep(time.Second * time.Duration(random))
 
 			if !player.online {
@@ -44,7 +106,8 @@ func main() {
 
 			if player.timer > 30 && player.fishing {
 				fishFalse(conn, player)
-				fmt.Println("Долго ловит, перезаброс")
+				fmt.Println("Долго ловит, выходим")
+				os.Exit(0)
 				break
 			}
 
@@ -74,7 +137,6 @@ func main() {
 				player.eid = p.EntityRuntimeID
 				break
 			}
-			player.position = p.PlayerPosition
 		case *packet.AvailableCommands:
 			if !player.online {
 				player.online = true
