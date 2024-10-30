@@ -75,11 +75,14 @@ func main() {
 		panic(err)
 	}
 
+	address := "127.0.0.1:19132"
+	if len(os.Args) == 2 {
+		address = os.Args[1]
+	}
+
 	dialer := minecraft.Dialer{
 		TokenSource: token,
 	}
-
-	address := "n3.joinserver.xyz:19184"
 
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
@@ -107,8 +110,8 @@ func main() {
 			if player.timer > 30 && player.fishing {
 				fishFalse(conn, player)
 				fmt.Println("Долго ловит, выходим")
-				os.Exit(0)
-				break
+
+				return
 			}
 
 			if player.fishing {

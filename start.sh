@@ -1,6 +1,6 @@
 #!/bin/bash
 while true
 do
- go run ./fisher.go
- sleep 30
+ ./fisher
+ sleep 45
 done
