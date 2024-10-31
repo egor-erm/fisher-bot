@@ -81,7 +81,7 @@ func main() {
 	}
 
 	dialer := minecraft.Dialer{
-		TokenSource: token,
+		//TokenSource: token,
 	}
 
 	conn, err := dialer.Dial("raknet", address)
@@ -96,6 +96,7 @@ func main() {
 
 	player := NewPlayer()
 
+	run := true
 	go func(player *Player) {
 		randoms := rand.New(rand.NewSource(time.Now().Unix()))
 
@@ -110,7 +111,7 @@ func main() {
 			if player.timer > 30 && player.fishing {
 				fishFalse(conn, player)
 				fmt.Println("Долго ловит, выходим")
-
+				run = false
 				return
 			}
 
@@ -124,7 +125,7 @@ func main() {
 		}
 	}(player)
 
-	for {
+	for run {
 		pk, err := conn.ReadPacket()
 		if err != nil {
 			break
