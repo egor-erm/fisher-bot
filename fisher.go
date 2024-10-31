@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -81,11 +82,18 @@ func main() {
 	}
 
 	dialer := minecraft.Dialer{
-		//TokenSource: token,
+		TokenSource: token,
 	}
 
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
+		if strings.Contains(err.Error(), "2148916276") {
+			err = os.Remove("token.json")
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+
 		panic(err)
 	}
 	defer conn.Close()
