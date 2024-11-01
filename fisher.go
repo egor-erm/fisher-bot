@@ -88,6 +88,7 @@ func main() {
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
 		if strings.Contains(err.Error(), "2148916276") {
+			fmt.Println("Токен устарел, удаляем его")
 			err = os.Remove("token.json")
 			if err != nil {
 				fmt.Println(err)
@@ -103,7 +104,6 @@ func main() {
 	}
 
 	player := NewPlayer()
-
 	run := true
 	go func(player *Player) {
 		randoms := rand.New(rand.NewSource(time.Now().Unix()))
@@ -154,9 +154,11 @@ func main() {
 				player.online = true
 			}
 		case *packet.AddActor:
-			if p.EntityType == "minecraft:fishing_hook" {
+			if p.EntityType == "minecraft:fishing_hook" && player.fishing && player.hook_uid == 0 && player.hook_rid == 0 {
 				fmt.Println("Заброс")
 				player.hook_uid = p.EntityUniqueID
+				player.hook_rid = p.EntityRuntimeID
+
 				fishTrueContinue(conn, player)
 			}
 		case *packet.RemoveActor:
@@ -165,7 +167,7 @@ func main() {
 				fishFalseLast(conn, player)
 			}
 		case *packet.ActorEvent:
-			if player.fishing {
+			if player.fishing && p.EntityRuntimeID == player.hook_rid {
 				switch player.stadies {
 				case 0:
 					if p.EventType == 14 {
@@ -216,6 +218,9 @@ func fishTrue(conn *minecraft.Conn, player *Player) {
 	if err := conn.WritePacket(getFishPacket1(player)); err != nil {
 		panic(err)
 	}
+
+	player.hook_uid = 0
+	player.hook_rid = 0
 
 	player.stadies = 0
 
@@ -385,6 +390,7 @@ type Player struct {
 	position  mgl32.Vec3
 	fishing   bool
 	hook_uid  int64
+	hook_rid  uint64
 	stadies   int8
 	eid       uint64
 	timer     int
@@ -392,5 +398,5 @@ type Player struct {
 }
 
 func NewPlayer() *Player {
-	return &Player{false, mgl32.Vec3{0, 0, 0}, false, 0, 0, 0, 0, make([]protocol.ItemInstance, 36)}
+	return &Player{false, mgl32.Vec3{0, 0, 0}, false, 0, 0, 0, 0, 0, make([]protocol.ItemInstance, 36)}
 }
