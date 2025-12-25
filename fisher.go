@@ -87,7 +87,7 @@ func main() {
 
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
-		if strings.Contains(err.Error(), "2148916276") {
+		if strings.Contains(err.Error(), "4294967295") {
 			fmt.Println("Токен устарел, удаляем его")
 			err = os.Remove("token.json")
 			if err != nil {
@@ -381,7 +381,6 @@ func getAnimatePacket(player *Player) *packet.Animate {
 	return &packet.Animate{
 		ActionType:      packet.AnimateActionSwingArm,
 		EntityRuntimeID: uint64(player.eid),
-		BoatRowingTime:  0,
 	}
 }
 
