@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	address := "n3.joinserver.xyz:19184"
+	address := "127.0.0.1:19132"
 	if len(os.Args) == 2 {
 		address = os.Args[1]
 	}
