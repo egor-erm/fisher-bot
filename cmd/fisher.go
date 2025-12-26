@@ -35,7 +35,7 @@ func main() {
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
 		if strings.Contains(err.Error(), "4294967295") {
-			fmt.Println("Токен устарел, удаляем его")
+			fmt.Println("The token is outdated, we are deleting it...")
 			err = os.Remove("token.json")
 			if err != nil {
 				fmt.Println(err)
@@ -69,7 +69,7 @@ func ticker(wg *sync.WaitGroup, conn *minecraft.Conn, player *Player) {
 
 		if player.timer-player.startFishing > 35*20 && player.fishing {
 			fishFalse(conn, player)
-			fmt.Println("Долго ловит, выходим")
+			fmt.Println("It takes a long time to catch, we log out of the server...")
 			break
 		}
 
@@ -170,13 +170,13 @@ func handle(wg *sync.WaitGroup, conn *minecraft.Conn, player *Player) {
 			}
 		case *packet.AddActor:
 			if p.EntityType == "minecraft:fishing_hook" && player.fishing && player.hookUid == 0 && player.hookRid == 0 {
-				fmt.Println("Заброс")
+				fmt.Println("Casting a fishing rod...")
 				player.hookUid = p.EntityUniqueID
 				player.hookRid = p.EntityRuntimeID
 			}
 		case *packet.RemoveActor:
 			if player.hookUid == p.EntityUniqueID {
-				fmt.Println("Вытащил")
+				fmt.Println("Pulling out the fishing rod...")
 			}
 		case *packet.ActorEvent:
 			if player.fishing && p.EntityRuntimeID == player.hookRid {
@@ -201,7 +201,6 @@ func handle(wg *sync.WaitGroup, conn *minecraft.Conn, player *Player) {
 			}
 		case *packet.InventoryTransaction:
 			if !player.online {
-				fmt.Println("Игрок не в сети!")
 				break
 			}
 
@@ -213,7 +212,7 @@ func handle(wg *sync.WaitGroup, conn *minecraft.Conn, player *Player) {
 
 			for _, action := range p.Actions {
 				if action.NewItem.Stack.ItemType.NetworkID != 0 {
-					fmt.Println("Выловил: ID:", action.NewItem.Stack.ItemType.NetworkID)
+					fmt.Println("Fish out: ID:", action.NewItem.Stack.ItemType.NetworkID)
 				}
 			}
 		}
