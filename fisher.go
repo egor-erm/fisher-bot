@@ -76,7 +76,7 @@ func main() {
 		panic(err)
 	}
 
-	address := "127.0.0.1:19132"
+	address := "127.0.0.1:19135"
 	if len(os.Args) == 2 {
 		address = os.Args[1]
 	}
@@ -127,6 +127,7 @@ func main() {
 				player.timer++
 			} else {
 				if player.timer == 0 {
+					time.Sleep(15 * time.Second)
 					fishTrue(conn, player)
 				}
 			}
@@ -143,11 +144,6 @@ func main() {
 		case *packet.InventoryContent:
 			if p.WindowID == 0 {
 				copy(player.inventory, p.Content)
-			}
-		case *packet.StartGame:
-			if !player.online {
-				player.eid = p.EntityRuntimeID
-				break
 			}
 		case *packet.AvailableCommands:
 			if !player.online {
@@ -211,7 +207,7 @@ func main() {
 }
 
 func fishTrue(conn *minecraft.Conn, player *Player) {
-	if err := conn.WritePacket(getAnimatePacket(player)); err != nil {
+	if err := conn.WritePacket(getAnimatePacket(conn, player)); err != nil {
 		panic(err)
 	}
 
@@ -227,6 +223,8 @@ func fishTrue(conn *minecraft.Conn, player *Player) {
 	player.timer = 0
 
 	player.fishing = true
+
+	fmt.Println("Типа кинули")
 }
 
 func fishTrueContinue(conn *minecraft.Conn, player *Player) {
@@ -236,7 +234,7 @@ func fishTrueContinue(conn *minecraft.Conn, player *Player) {
 }
 
 func fishFalse(conn *minecraft.Conn, player *Player) {
-	if err := conn.WritePacket(getAnimatePacket(player)); err != nil {
+	if err := conn.WritePacket(getAnimatePacket(conn, player)); err != nil {
 		panic(err)
 	}
 
@@ -310,23 +308,25 @@ func getFishPacket1(player *Player) *packet.InventoryTransaction {
 		TransactionData: &protocol.UseItemTransactionData{
 			LegacyRequestID:    0,
 			LegacySetItemSlots: []protocol.LegacySetItemSlot{},
-			ActionType:         1,
 			Actions:            []protocol.InventoryAction{},
+			ActionType:         1,
+			TriggerType:        0,
 			BlockPosition:      protocol.BlockPos{0, 0, 0},
 			BlockFace:          255,
 			HotBarSlot:         0,
-			HeldItem: protocol.ItemInstance{StackNetworkID: 1, Stack: protocol.ItemStack{
+			HeldItem: protocol.ItemInstance{StackNetworkID: 0, Stack: protocol.ItemStack{
 				ItemType:       protocol.ItemType{NetworkID: player.inventory[0].Stack.NetworkID, MetadataValue: player.inventory[0].Stack.MetadataValue},
-				Count:          1,
 				BlockRuntimeID: 0,
+				Count:          1,
 				NBTData:        player.inventory[0].Stack.NBTData,
 				CanBePlacedOn:  []string{},
 				CanBreak:       []string{},
-				HasNetworkID:   true,
+				HasNetworkID:   false,
 			}},
-			Position:        player.position,
-			ClickedPosition: mgl32.Vec3{0, 0, 0},
-			BlockRuntimeID:  0,
+			Position:         player.position,
+			ClickedPosition:  mgl32.Vec3{0, 0, 0},
+			BlockRuntimeID:   0,
+			ClientPrediction: 0,
 		},
 	}
 }
@@ -377,10 +377,12 @@ func getFishPacket3(player *Player) *packet.InventoryTransaction {
 	}
 }
 
-func getAnimatePacket(player *Player) *packet.Animate {
+func getAnimatePacket(conn *minecraft.Conn, player *Player) *packet.Animate {
 	return &packet.Animate{
 		ActionType:      packet.AnimateActionSwingArm,
-		EntityRuntimeID: uint64(player.eid),
+		EntityRuntimeID: conn.GameData().EntityRuntimeID,
+		Data:            0,
+		SwingSource:     6,
 	}
 }
 
