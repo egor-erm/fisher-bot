@@ -34,7 +34,7 @@ func main() {
 
 	conn, err := dialer.Dial("raknet", address)
 	if err != nil {
-		if strings.Contains(err.Error(), "4294967295") {
+		if strings.Contains(err.Error(), "2148916276") {
 			fmt.Println("The token is outdated, we are deleting it...")
 			err = os.Remove("token.json")
 			if err != nil {
